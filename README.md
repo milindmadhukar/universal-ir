@@ -9,31 +9,32 @@ no local toolchain, no slow Pi builds.
 ## Devices
 | Device | Package | What you get |
 |--------|---------|--------------|
-| **Godrej AC** | `esphome/devices/godrej-ac.yaml` | Full thermostat card (temp/mode/fan), a 10-position swing select, automatic state sync when the physical remote is used, and an IR-repeater switch. Protocol reverse-engineered into a custom component that synthesizes + decodes frames. |
+| **Godrej AC** | `devices/godrej-ac.yaml` | Full thermostat card (temp/mode/fan), a 10-position swing select, automatic state sync when the physical remote is used, and an IR-repeater switch. Protocol reverse-engineered into a custom component that synthesizes + decodes frames. |
 
-Add a new device by dropping a package under `esphome/devices/` and listing it
-under `packages:` in the node config.
+Add a new device by dropping a package under `devices/` and listing it under
+`packages:` in the node config.
 
 ## Layout
 ```
-Makefile                       # compile / flash / logs / etc. (see `make help`)
-docker-compose.yml             # ESPHome in Docker (CLI + web dashboard)
-esphome/
-  universal-ir.yaml            # the node — single-file builder config (pulls device
-                               #   packages + components from GitHub)
-  universal-ir-local.yaml      # the node — local-build twin (default for `make`)
-  devices/
-    godrej-ac.yaml             # Godrej AC device package
-  components/
-    godrej_ac/                 # Godrej AC custom climate component (the protocol)
-  capture.yaml                 # reusable IR "learning" tool (dump codes from any remote)
-  secrets.yaml                 # wifi + keys (gitignored) — FILL THIS IN
+Makefile                     # compile / flash / logs / etc. (see `make help`)
+docker-compose.yml           # ESPHome in Docker (CLI + web dashboard)
+universal-ir.yaml            # the node — single-file builder config (pulls device
+                             #   packages + components from GitHub)
+universal-ir-local.yaml      # the node — local-build twin (default for `make`)
+devices/
+  godrej-ac.yaml             # Godrej AC device package
+components/
+  godrej_ac/                 # Godrej AC custom climate component (the protocol)
+capture.yaml                 # reusable IR "learning" tool (dump codes from any remote)
+secrets.yaml                 # wifi + keys (gitignored) — FILL THIS IN
+.esphome/                    # ESPHome build cache (gitignored)
 ```
+The repo root is the ESPHome config dir (mounted as `/config` in Docker).
 
 ## Two ways to build
-- **ESPHome dashboard / "Builder"**: paste **`esphome/universal-ir.yaml`** — it
-  pulls the component and every device package straight from this GitHub repo, so
-  it's the only file you need (plus `secrets.yaml`).
+- **ESPHome dashboard / "Builder"**: paste **`universal-ir.yaml`** — it pulls the
+  component and every device package straight from this GitHub repo, so it's the
+  only file you need (plus `secrets.yaml`).
 - **Local (default)**: `make` targets build **`universal-ir-local.yaml`** from the
   on-disk tree — use this when editing components.
 

@@ -1,6 +1,6 @@
 # ESPHome build artifacts & secrets
-esphome/.esphome/
-esphome/secrets.yaml
+.esphome/
+secrets.yaml
 reference-ir-smart-remote/
 __pycache__/
 *.pyc

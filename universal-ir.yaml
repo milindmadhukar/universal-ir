@@ -37,7 +37,7 @@ packages:
   godrej_ac:
     url: https://github.com/milindmadhukar/universal-ir
     ref: main
-    files: [esphome/devices/godrej-ac.yaml]
+    files: [devices/godrej-ac.yaml]
     refresh: 1d
 
 logger:
