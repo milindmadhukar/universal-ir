@@ -1,0 +1,48 @@
+# =============================================================================
+# PHASE 1 — CAPTURE
+# Flash this first. Point your Godrej remote at the IR receiver, press a button,
+# and read the decoded/raw codes in the ESPHome logs. Copy the raw timings into
+# godrej-ac.yaml (Phase 2) to replay them.
+#
+# Godrej AC is NOT a natively supported climate_ir brand, so we capture raw
+# frames. Each AC button press sends the FULL state (power+temp+mode+fan+swing),
+# so capture one frame per *setting* you care about (e.g. "Cool 24 fan-auto",
+# "Off"), not one per "button".
+# =============================================================================
+
+substitutions:
+  name: "godrej-ir-capture"
+  # >>> EDIT THESE to match your wiring on the ESP32-C3 Super Mini <<<
+  rx_pin: "GPIO5"   # IR receiver (VS1838B) DATA pin
+  tx_pin: "GPIO4"   # IR LED driver (via 2N2222) — unused here but reserved
+
+esphome:
+  name: ${name}
+  friendly_name: Godrej IR Capture
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf   # auto-allocates RMT channels; avoids the C3 rmt_channel quirk
+
+logger:
+  level: DEBUG
+
+# WiFi intentionally DISABLED for capture — we read codes over USB serial only.
+# This keeps the log clean (no reconnect spam) and frees CPU for IR decoding.
+# Re-enable it in godrej-ac.yaml for the Home Assistant phase.
+
+remote_receiver:
+  pin:
+    number: ${rx_pin}
+    inverted: true      # VS1838B idles HIGH, drives LOW on burst
+    mode:
+      input: true
+      pullup: true
+  # Decode known protocols if possible, AND print raw timings for replay:
+  dump: all
+  # Loosen these if frames are truncated/noisy:
+  idle: 25ms            # AC frames have long gaps; 25ms separates frames well
+  tolerance: 25%
+  filter: 250us
+  buffer_size: 2kb      # AC frames are long — give the buffer room

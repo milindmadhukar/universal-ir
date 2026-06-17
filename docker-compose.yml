@@ -1,0 +1,39 @@
+# ESPHome running fully on your machine (not the slow HA Pi).
+#
+# Two ways to use this:
+#   1. Web dashboard (like the HA "ESPHome Builder", but fast):
+#        docker compose up -d
+#        open http://localhost:6052
+#   2. One-off CLI commands (compile / flash / logs) without the UI:
+#        docker compose run --rm cli compile  esphome/godrej-ac.yaml
+#        docker compose run --rm cli run      esphome/godrej-ac.yaml
+#        docker compose run --rm cli logs     esphome/godrej-ac.yaml
+#
+# privileged + network_mode: host are used so that:
+#   - the ESP32-C3's native USB serial (/dev/ttyACM0) is reachable, and it
+#     survives the re-enumeration that happens when the C3 resets during flashing
+#   - mDNS works for OTA discovery after the first USB flash
+
+services:
+  # Persistent web dashboard
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome:2025.5
+    command: dashboard /config
+    volumes:
+      - ./esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+    network_mode: host
+    privileged: true
+    restart: unless-stopped
+
+  # On-demand CLI (does not stay running). Use: docker compose run --rm cli <args>
+  cli:
+    image: ghcr.io/esphome/esphome:2025.5
+    volumes:
+      - ./esphome:/config
+      - /etc/localtime:/etc/localtime:ro
+    working_dir: /config
+    network_mode: host
+    privileged: true
+    profiles: ["cli"]   # keeps it from auto-starting with `up`
