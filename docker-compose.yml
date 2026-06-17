@@ -5,9 +5,9 @@
 #        docker compose up -d
 #        open http://localhost:6052
 #   2. One-off CLI commands (compile / flash / logs) without the UI:
-#        docker compose run --rm cli compile  esphome/godrej-ac.yaml
-#        docker compose run --rm cli run      esphome/godrej-ac.yaml
-#        docker compose run --rm cli logs     esphome/godrej-ac.yaml
+#        docker compose run --rm cli compile  universal-ir-local.yaml
+#        docker compose run --rm cli run      universal-ir-local.yaml
+#        docker compose run --rm cli logs     universal-ir-local.yaml
 #
 # privileged + network_mode: host are used so that:
 #   - the ESP32-C3's native USB serial (/dev/ttyACM0) is reachable, and it

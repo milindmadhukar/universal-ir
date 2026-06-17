@@ -1,25 +1,41 @@
-# Universal IR Remote — Godrej AC (ESPHome + Home Assistant)
+# universal-ir — ESPHome IR blaster (Home Assistant)
 
-Control a **Godrej AC** with an **ESP32-C3 Super Mini** over IR, exposed to Home
-Assistant as a full **thermostat card**. Everything compiles/flashes on your
-machine via **Docker** — no local toolchain, no slow Pi builds.
+A single **ESP32-C3 Super Mini** acting as a universal IR blaster + receiver,
+exposed to Home Assistant via ESPHome. The node owns the shared plumbing
+(Wi-Fi / API / OTA / IR hardware); each appliance it controls is a self-contained
+**device package**. Everything compiles/flashes on your machine via **Docker** —
+no local toolchain, no slow Pi builds.
 
-Godrej isn't a built-in ESPHome brand, so its IR protocol was reverse-engineered
-and reimplemented as a custom component that **synthesizes** any frame
-(temp/fan/swing/power + checksum) — verified bit-for-bit against captures and on
-the real AC.
+## Devices
+| Device | Package | What you get |
+|--------|---------|--------------|
+| **Godrej AC** | `esphome/devices/godrej-ac.yaml` | Full thermostat card (temp/mode/fan), a 10-position swing select, automatic state sync when the physical remote is used, and an IR-repeater switch. Protocol reverse-engineered into a custom component that synthesizes + decodes frames. |
+
+Add a new device by dropping a package under `esphome/devices/` and listing it
+under `packages:` in the node config.
 
 ## Layout
 ```
 Makefile                       # compile / flash / logs / etc. (see `make help`)
 docker-compose.yml             # ESPHome in Docker (CLI + web dashboard)
 esphome/
-  secrets.yaml                 # wifi + keys (gitignored) — FILL THIS IN
-  godrej-climate.yaml          # the device: thermostat + swing-angle select
+  universal-ir.yaml            # the node — single-file builder config (pulls device
+                               #   packages + components from GitHub)
+  universal-ir-local.yaml      # the node — local-build twin (default for `make`)
+  devices/
+    godrej-ac.yaml             # Godrej AC device package
+  components/
+    godrej_ac/                 # Godrej AC custom climate component (the protocol)
   capture.yaml                 # reusable IR "learning" tool (dump codes from any remote)
-  components/godrej_ac/        # custom climate component (the decoded protocol)
-reference-ir-smart-remote/     # Cian911's repo, reference only
+  secrets.yaml                 # wifi + keys (gitignored) — FILL THIS IN
 ```
+
+## Two ways to build
+- **ESPHome dashboard / "Builder"**: paste **`esphome/universal-ir.yaml`** — it
+  pulls the component and every device package straight from this GitHub repo, so
+  it's the only file you need (plus `secrets.yaml`).
+- **Local (default)**: `make` targets build **`universal-ir-local.yaml`** from the
+  on-disk tree — use this when editing components.
 
 ## Quick start
 ```bash
@@ -32,6 +48,7 @@ make run                        # compile + upload + logs in one go
 Override the config or port:
 ```bash
 make flash YAML=capture.yaml
+make run   YAML=universal-ir.yaml     # build the GitHub-sourced node instead
 make logs  DEVICE=/dev/ttyACM1
 ```
 
@@ -46,11 +63,12 @@ make logs  DEVICE=/dev/ttyACM1
 ## Home Assistant
 1. Put real values in `esphome/secrets.yaml` (wifi + API key).
 2. `make flash` (USB first time; later flashes can be OTA).
-3. HA → Settings → Devices & Services → ESPHome auto-discovers `godrej-ac`.
-   You get a thermostat card (16–30°C, Cool/Off, fan Auto/Low/Med/High) plus a
-   "Godrej Swing" select with the 10 angles (rename them in HA to taste).
+3. HA → Settings → Devices & Services → ESPHome auto-discovers **`universal-ir`**.
+   The Godrej AC device gives you a thermostat card (16–30°C, Cool/Off, fan
+   Auto/Low/Med/High), a "Godrej Swing" select (10 angles), and an "IR Repeater"
+   switch. Using the physical Godrej remote updates these automatically.
 
-## Protocol (for reference)
+## Godrej AC protocol (for reference)
 LG-extended, 38 kHz, 67 data bits in two blocks. Fields (LSB-first data bits):
 temp = bits 8–11 (`°C − 16`), fan = bits 4–5, swing = bits {6,35–38},
 power = bits 3 & 22, checksum = bits 63–66 = `(nibble0 + temp_nibble + 12) & 0xF`.

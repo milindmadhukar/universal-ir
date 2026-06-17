@@ -1,0 +1,73 @@
+# =============================================================================
+# Godrej AC — device package for the universal-ir node.
+#
+# Pulled into a node via `packages:` (locally with !include, or from GitHub).
+# It contributes the climate entity, the swing-angle select, and the IR-repeater
+# switch. It expects the NODE to provide:
+#   * the `godrej_ac` external component (via external_components)
+#   * a remote_transmitter with id `ir_tx`
+#   * a remote_receiver   with id `ir_rx`
+#
+# Features: HA thermostat card + swing select + RX state sync + IR repeater.
+# =============================================================================
+esphome:
+  on_boot:
+    # Wire the swing select into the climate component so decoded (received)
+    # frames can keep the select entity in sync.
+    priority: -100
+    then:
+      - lambda: "id(godrej)->set_swing_select(id(godrej_swing));"
+
+climate:
+  - platform: godrej_ac
+    name: "Godrej AC"
+    id: godrej
+    transmitter_id: ir_tx
+    receiver_id: ir_rx
+
+# Swing has 10 fixed positions, exposed as a separate select because Home
+# Assistant's climate swing_mode only allows a few fixed enum values. The option
+# ORDER must match the GODREJ_SWING[] array indices in godrej_ac.h. Rename these
+# in HA to whatever the angles actually are.
+select:
+  - platform: template
+    name: "Godrej Swing"
+    id: godrej_swing
+    optimistic: true
+    options:
+      - "Angle 1"        # idx0
+      - "Off / Straight" # idx1 (all-zero pattern)
+      - "Angle 2"        # idx2
+      - "Angle 3"        # idx3
+      - "Angle 4"        # idx4
+      - "Angle 5"        # idx5
+      - "Angle 6"        # idx6
+      - "Angle 7"        # idx7
+      - "Angle 8"        # idx8
+      - "Angle 9"        # idx9
+    initial_option: "Off / Straight"
+    on_value:
+      then:
+        - lambda: |-
+            auto idx = id(godrej_swing).index_of(x);
+            if (idx.has_value())
+              id(godrej)->set_swing_index(*idx);
+
+# IR repeater toggle. When ON, every received IR frame is re-transmitted out the
+# LED (range extender / relay). State is decoded regardless; the repeat is the
+# extra behaviour. Defaults OFF and is restored across reboots.
+#
+# NOTE: the repeater lives in the godrej_ac component's RX path, so it currently
+# rides along with this device. If you later want a device-independent repeater,
+# it would move to a dedicated node-level component.
+switch:
+  - platform: template
+    name: "IR Repeater"
+    id: ir_repeater
+    icon: "mdi:repeat-variant"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - lambda: "id(godrej)->set_repeater(true);"
+    turn_off_action:
+      - lambda: "id(godrej)->set_repeater(false);"

@@ -14,8 +14,11 @@
 # Override the config or port per-invocation:
 #   make flash YAML=capture.yaml
 #   make logs DEVICE=/dev/ttyACM1
+#
+# universal-ir.yaml = single-file builder config (pulls everything from GitHub).
+# universal-ir-local.yaml = same node, built from the local tree (the default).
 
-YAML   ?= godrej-climate.yaml      # default config
+YAML   ?= universal-ir-local.yaml   # default config (local build of the node)
 DEVICE ?= /dev/ttyACM0            # ESP32-C3 native USB serial
 CLI     = docker compose run --rm cli
 
