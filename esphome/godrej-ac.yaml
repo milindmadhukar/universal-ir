@@ -1,11 +1,18 @@
 # =============================================================================
-# Godrej AC — LOCAL build config (uses the components/ folder on disk).
+# Godrej AC — single-file ESPHome config for the dashboard / "ESPHome Builder".
 #
-# This is the offline twin of godrej-ac.yaml: identical features, but it loads
-# the godrej_ac component from ./components instead of GitHub. Use this for
-# `make` / local CLI builds. Use godrej-ac.yaml (github source) in the builder.
+# This is the ONLY file you paste into the builder. The custom climate logic
+# (godrej_ac component) is pulled straight from GitHub, so there is no
+# components/ folder to copy. You only need this file + your secrets.yaml.
 #
-# Features: climate thermostat card + swing select + RX state sync + repeater.
+# What it gives you in Home Assistant:
+#   * Real climate thermostat card (temp / mode / fan).
+#   * "Godrej Swing" select for the 10 fixed swing angles.
+#   * RX SYNC: using the physical remote updates the HA state automatically
+#     (climate card + swing select both follow the real AC).
+#   * IR REPEATER switch: when ON, every received IR frame is re-blasted out
+#     the LED (range extender / relay). Self-echo is suppressed so it never
+#     re-ingests or loops its own transmissions.
 # =============================================================================
 substitutions:
   name: "godrej-ac"
@@ -16,6 +23,8 @@ esphome:
   name: ${name}
   friendly_name: Godrej AC
   on_boot:
+    # Wire the swing select into the climate component so decoded frames can
+    # update it. Done here because the select is a separate entity.
     priority: -100
     then:
       - lambda: "id(godrej)->set_swing_select(id(godrej_swing));"
@@ -25,10 +34,12 @@ esp32:
   framework:
     type: esp-idf
 
+# Pulls the godrej_ac climate component from GitHub (found under
+# esphome/components/godrej_ac in the repo). Pin to a tag/commit instead of
+# @main if you want fully reproducible builds.
 external_components:
-  - source:
-      type: local
-      path: components
+  - source: github://milindmadhukar/universal-ir@main
+    components: [godrej_ac]
 
 logger:
 
@@ -78,6 +89,7 @@ climate:
 # Swing has 10 fixed positions. They're exposed as a separate select because
 # Home Assistant's climate swing_mode only allows a few fixed enum values.
 # The option ORDER must match the GODREJ_SWING[] array indices in godrej_ac.h.
+# Rename these in HA to whatever the angles actually are.
 select:
   - platform: template
     name: "Godrej Swing"
@@ -103,7 +115,8 @@ select:
               id(godrej)->set_swing_index(*idx);
 
 # IR repeater toggle. When ON, every received IR frame is re-transmitted out
-# the LED. Defaults OFF and is restored across reboots.
+# the LED (range extender / relay). State is decoded regardless; the repeat is
+# the extra behaviour. Defaults OFF and is restored across reboots.
 switch:
   - platform: template
     name: "IR Repeater"

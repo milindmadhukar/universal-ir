@@ -1,7 +1,9 @@
 import esphome.codegen as cg
 from esphome.components import climate_ir
 
-AUTO_LOAD = ["climate_ir"]
+# "select" is auto-loaded because godrej_ac.h includes select/select.h to
+# mirror decoded swing positions back to the HA swing select entity.
+AUTO_LOAD = ["climate_ir", "select"]
 CODEOWNERS = ["@milind"]
 
 godrej_ac_ns = cg.esphome_ns.namespace("godrej_ac")
